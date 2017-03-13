@@ -1,0 +1,11 @@
+_build
+/cover
+/deps
+erl_crash.dump
+*.ez
+rel
+config/config_prod.exs
+.iex.exs
+*.env
+.out
+.tags

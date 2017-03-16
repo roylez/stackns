@@ -19,7 +19,10 @@ defmodule Stackns.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger]]
+    [
+      extra_applications: [:logger],
+      mod: { Stackns, [] }
+    ]
   end
 
   # Dependencies can be Hex packages:
@@ -33,13 +36,16 @@ defmodule Stackns.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:distillery, "~> 1.1.0"}
+      {:distillery, "~> 1.1.0"},
+      {:dns, "~> 0.0.4"},
+      {:amqp, "~> 0.2.0-pre.2" },
+      {:openstack, "~> 0.0.5" },
     ]
   end
 
   defp aliases do
     [
-      test:    ["ecto.drop", "ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      test: "test --no-start",
       upgrade: "release --upgrade"
     ]
   end

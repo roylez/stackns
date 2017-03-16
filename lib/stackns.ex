@@ -1,18 +1,29 @@
+require Logger
+
 defmodule Stackns do
   @moduledoc """
-  Documentation for Stackns.
+  A minimal DNS server for openstack client environment
+
+  Configurable options:
+
+  * port: Listening port, default to 53
+  * dns: Upstream DNS, default to use system DNS
+  * dns_port: Upstream DNS port, default to 53
   """
 
-  @doc """
-  Hello world.
+  use Application
+  import Supervisor.Spec
 
-  ## Examples
+  def start(_type, _args) do
+    children = [
+      worker(Stackns.RequestHandler, [%{dns: { "8.8.8.8", 53} }]),
+      worker(Common.TableManager, [Stackns.RequestHandler, :hosts ]),
+      worker(Task, [DNS.Server, :accept, [5300, Stackns.RequestHandler]]),
+    ]
 
-      iex> Stackns.hello
-      :world
+    opts = [strategy: :one_for_one, name: __MODULE__ ]
 
-  """
-  def hello do
-    :world
+    Supervisor.start_link(children, opts)
   end
+
 end

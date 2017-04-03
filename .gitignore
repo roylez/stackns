@@ -9,3 +9,5 @@ config/config_prod.exs
 *.env
 .out
 .tags
+stackns.yml
+hosts

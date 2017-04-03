@@ -39,13 +39,13 @@ defmodule Stackns.Mixfile do
       {:distillery, "~> 1.1.0"},
       {:dns, "~> 0.0.4"},
       {:amqp, "~> 0.2.0-pre.2" },
-      {:openstack, "~> 0.0.5" },
+      {:yaml_elixir, "~> 1.1" }
     ]
   end
 
   defp aliases do
     [
-      test: "test --no-start",
+      # test: "test --no-start",
       upgrade: "release --upgrade"
     ]
   end

@@ -1,11 +1,12 @@
 require Logger
 
 defmodule Stackns.RequestHandler do
+  alias Stackns.Hosts
   use GenServer
   @behaviour DNS.Server
 
   def init( params) do
-    { :ok, params |> Map.put_new(:hosts, nil) }
+    { :ok, params }
   end
 
   def start_link(state) do
@@ -21,14 +22,17 @@ defmodule Stackns.RequestHandler do
     GenServer.call(__MODULE__, {:query, req })
   end
 
-  def handle_call( {:query, req}, _, %{ dns: dns, hosts: hosts } = state) do
+  def handle_call( {:query, req}, _, %{ dns: dns }= state) do
     domain = hd(req.qdlist).domain
-    resp = case :ets.lookup(hosts, domain) do
-      []        -> resolve(req, dns)
-      addresses -> 
-        anlist = addresses 
+    hosts_rec = Hosts.lookup(domain)
+    Logger.debug inspect(hosts_rec)
+    resp = case hosts_rec do
+      [] -> resolve(req, dns)
+      _  -> 
+        anlist = hosts_rec
                  |> Keyword.values
                  |> Enum.map(& %DNS.Resource{ domain: domain, class: :in, type: :a, ttl: 0, data: &1})
+        Logger.debug inspect anlist
         %{req | anlist: anlist}
     end
     { :reply, resp, state }
@@ -39,9 +43,5 @@ defmodule Stackns.RequestHandler do
     Socket.Datagram.send!(client, DNS.Record.encode(req), dns)
     { data, _server } = Socket.Datagram.recv!(client)
     DNS.Record.decode(data)
-  end
-
-  def handle_info( {:"ETS-TRANSFER", tab, _from, _}, state ) do
-    { :noreply, %{state | hosts: tab}  }
   end
 end

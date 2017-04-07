@@ -20,7 +20,7 @@ defmodule Stackns.Mixfile do
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :httpoison],
       mod: { Stackns, [] }
     ]
   end
@@ -38,8 +38,10 @@ defmodule Stackns.Mixfile do
     [
       {:distillery, "~> 1.1.0"},
       {:dns, "~> 0.0.4"},
-      {:amqp, "~> 0.2.0-pre.2" },
-      {:yaml_elixir, "~> 1.1" }
+      {:amqp, "~> 0.1.5" },
+      {:yaml_elixir, "~> 1.1" },
+      {:poison, "~> 3.0" },
+      {:httpoison, "~> 0.11.0" },
     ]
   end
 

@@ -21,11 +21,14 @@ defmodule Stackns do
       Map.get(config, "dns_port", 53)
     }
     listening_port = Map.get(config, "listening_port", 53)
+    rabbit    = rabbit_config(config)
+    openstack = openstack_config(config)
 
     children = [
       worker(Stackns.RequestHandler, [%{dns: dns }]),
-      worker(Stackns.Hosts, []),
-      worker(Common.TableManager, [Stackns.Hosts, :hosts, [:duplicate_bag] ]),
+      worker(Stackns.RabbitClient, [rabbit]),
+      worker(Stackns.Hosts, [openstack]),   # this one starts Nova client as well
+      worker(Common.TableManager, [Stackns.Hosts, :hosts ]),
       worker(Task, [DNS.Server, :accept, [listening_port, Stackns.RequestHandler]]),
     ]
 
@@ -38,6 +41,26 @@ defmodule Stackns do
     config = YamlElixir.read_from_file Application.get_env(:stackns, :config_file)
     Logger.info "Configuration loaded: #{inspect(config)}"
     config
+  end
+
+  defp rabbit_config(config) do
+    %{
+      exchange: config["rabbit_exchange"],
+      user:     config["rabbit_user"],
+      host:     config["rabbit_host"],
+      vhost:    config["rabbit_vhost"],
+      topic:    config["rabbit_topic"],
+      passwd:   config["rabbit_passwd"],
+    }
+  end
+
+  defp openstack_config(config) do
+    %{
+      user:     config["os_user"],
+      passwd:   config["os_passwd"],
+      tenant:   config["os_tenant"],
+      auth_url: config["os_auth_url"],
+    }
   end
 
 end

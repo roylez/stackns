@@ -5,16 +5,22 @@ defmodule Stackns.Hosts do
   manages hosts file
   """
 
-  @hosts_file Application.get_env(:stackns, :hosts_file)
-
   use GenServer
+  alias Stackns.Nova
 
-  def init(_) do
-    { :ok, %{ hosts: nil } }
+  defmodule State do
+    defstruct hosts: nil, nova: nil
   end
 
-  def start_link do
-    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  def init(os) do
+    { :ok, _ } = Nova.start_link(os)
+    Nova.servers()    # to authenticate
+    nova = Nova.info()
+    { :ok, %State{ nova: nova } }
+  end
+
+  def start_link(os) do
+    GenServer.start_link(__MODULE__, os, name: __MODULE__)
   end
 
   def lookup(domain) when is_list(domain), do: lookup(to_string(domain))
@@ -24,7 +30,9 @@ defmodule Stackns.Hosts do
   end
 
   def handle_call({:lookup, domain}, _, %{ hosts: hosts } = state ) do
-    resp = :ets.lookup(hosts, domain)
+    resp = hosts
+           |> :ets.match({:'_', domain, :'$1'})
+           |> List.flatten
     { :reply, resp, state }
   end
 
@@ -33,26 +41,61 @@ defmodule Stackns.Hosts do
     { :noreply, %{state | hosts: tab}  }
   end
 
+  def handle_cast( {:nova_port_change, %{ "event_type" => "port.create.end" }=payload}, state ) do
+    add_nova_port(payload, state)
+    { :noreply, state }
+  end
+
+  def handle_cast( {:nova_port_change, %{ "event_type" => "port.delete.end" }=payload}, state ) do
+    delete_nova_port(payload, state)
+    { :noreply, state }
+  end
+
+  def handle_cast( {:nova_port_change, _payload}, state ) do
+    { :noreply, state }
+  end
+
+  def add_nova_port(%{ "payload" => %{ "port" => %{ "tenant_id" => tenant_id}=payload } }, 
+      %{ nova: %{ tenant_id: tenant_id }} = state ) do
+    %{ 
+      "fixed_ips" => [ %{"ip_address" => ip }],
+      "device_id" => device_id,
+      "id" => port_id 
+    } = payload
+    {:ok, %{"server" => %{"name" => hostname} }} = Nova.server(device_id)
+    save_host_in_ets([hostname, ip, port_id], state.hosts)
+  end
+
+  def add_nova_port( _, _ ), do: nil
+
+  def delete_nova_port(%{"_context_tenant_name" => tenant, "payload" => %{"port_id"=> port_id} }, 
+      %{ nova: %{ tenant: tenant }} = state ) do
+    Logger.info "Deleting port: #{port_id}"
+    :ets.delete(state.hosts, port_id)
+  end
+
+  def delete_nova_port( _, _), do: nil
+
   defp load_hosts(tab) do
-    if File.exists?( @hosts_file ) do
-      @hosts_file
-      |> File.stream!([:read])
-      |> process_hosts_lines
-      |> Enum.map(& save_host_in_ets(&1, tab))
+    hosts = case Nova.servers() do
+      { :ok, %{ "servers" => nodes } } ->
+        nodes
+        |> Stream.map( & [&1["name"], &1["id"]] )
+        |> Enum.map( fn([ n, id ]) ->
+          { :ok, %{ "interfaceAttachments" => ports } } = Nova.server_port( id )
+          ports
+          |> Enum.map( & [n, hd(&1["fixed_ips"])["ip_address"], &1["port_id"]])
+        end)
+        |> Enum.reduce( fn(x, acc) -> acc ++ x end )
+      { :error, _reason } -> []
     end
+    hosts
+    |> Enum.map(& save_host_in_ets(&1, tab) )
   end
 
-  defp process_hosts_lines(stream) do
-    stream
-    |> Stream.map( &String.trim_leading/1 )
-    |> Stream.filter( & not String.starts_with?(&1, "#") )
-    |> Stream.map( &(Regex.replace(~r/\s+(#.*)?$/, &1, "") ) )
-    |> Enum.map( &String.split/1 )
-  end
-
-  defp save_host_in_ets([host, addr], tab) do
-    Logger.debug "Loading #{host} : #{addr}"
+  defp save_host_in_ets([host, addr, port_id], tab) do
+    Logger.info "Adding [#{port_id}] #{host} : #{addr}"
     ip = Socket.Address.parse(addr)
-    :ets.insert( tab, { host, ip } )
+    :ets.insert( tab, { port_id, host, ip } )
   end
 end

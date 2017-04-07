@@ -30,7 +30,6 @@ defmodule Stackns.RequestHandler do
       [] -> resolve(req, dns)
       _  -> 
         anlist = hosts_rec
-                 |> Keyword.values
                  |> Enum.map(& %DNS.Resource{ domain: domain, class: :in, type: :a, ttl: 0, data: &1})
         Logger.debug inspect anlist
         %{req | anlist: anlist}

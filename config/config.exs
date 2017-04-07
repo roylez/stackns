@@ -25,7 +25,6 @@ config :logger, :console,
   colors: [ enabled: true ]
 
 config :stackns, config_file: File.cwd!() <> "/stackns.yml"
-config :stackns, hosts_file:  File.cwd!() <> "/hosts"
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

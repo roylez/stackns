@@ -1,0 +1,18 @@
+
+dns_address: 8.8.8.8
+dns_port:    53
+
+listening_port: 53
+
+rabbit_exchange: neutron
+rabbit_topic:    notifications.info
+
+rabbit_host:     changeme
+rabbit_vhost:    changeme
+rabbit_user:     changeme
+rabbit_passwd:   changeme
+
+os_user:         changeme
+os_passwd:       changeme
+os_tenant:       changeme
+os_auth_url:     changeme

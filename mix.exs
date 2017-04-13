@@ -42,6 +42,7 @@ defmodule Stackns.Mixfile do
       {:yaml_elixir, "~> 1.1" },
       {:poison, "~> 3.0" },
       {:httpoison, "~> 0.11.0" },
+      {:socket, "~> 0.3"},
     ]
   end
 

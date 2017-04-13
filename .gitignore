@@ -11,3 +11,4 @@ config/config_prod.exs
 .tags
 stackns.yml
 hosts
+*.deb

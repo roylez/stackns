@@ -41,6 +41,7 @@ defmodule Stackns.RequestHandler do
     client = Socket.UDP.open!
     Socket.Datagram.send!(client, DNS.Record.encode(req), dns)
     { data, _server } = Socket.Datagram.recv!(client)
+    :gen_udp.close(client)
     DNS.Record.decode(data)
   end
 end

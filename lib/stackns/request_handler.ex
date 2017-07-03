@@ -4,6 +4,7 @@ defmodule Stackns.RequestHandler do
   alias Stackns.Hosts
   use GenServer
   @behaviour DNS.Server
+  @timeout 1000
 
   def init( params) do
     { :ok, params }
@@ -35,6 +36,10 @@ defmodule Stackns.RequestHandler do
         %{req | anlist: anlist}
     end
     { :reply, resp, state }
+  end
+
+  def handle_info(:timeout, state) do
+    { :noreply, state }
   end
 
   def resolve(req, dns) do

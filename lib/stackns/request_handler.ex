@@ -45,8 +45,12 @@ defmodule Stackns.RequestHandler do
   def resolve(req, dns) do
     client = Socket.UDP.open!
     Socket.Datagram.send!(client, DNS.Record.encode(req), dns)
-    { data, _server } = Socket.Datagram.recv!(client)
-    :gen_udp.close(client)
-    DNS.Record.decode(data)
+    case Socket.Datagram.recv(client) do
+      { :ok, { data, _server } } -> 
+        :gen_udp.close(client)
+        DNS.Record.decode(data)
+      { :error, term } ->
+        Logger.info "Error #{term} resolving #{inspect req}"
+    end
   end
 end

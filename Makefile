@@ -10,8 +10,8 @@ clean:
 	rm -f *.deb
 
 build:
-	mix local.hex --force
-	mix local.rebar --force
+	# mix local.hex --force
+	# mix local.rebar --force
 	mix deps.get
 	mix deps.compile
 	MIX_ENV=prod mix release --env=prod

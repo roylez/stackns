@@ -4,7 +4,7 @@ defmodule Stackns.Mixfile do
   def project do
     [
       app:             :stackns,
-      version:         "0.1.0-#{git_sha()}",
+      version:         "0.2.0-#{git_sha()}",
       elixir:          "~> 1.4",
       build_embedded:  Mix.env == :prod,
       start_permanent: Mix.env == :prod,
